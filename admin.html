@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Web Admin - Pengaturan Halaman Kedua (Firebase)</title>
+<style>
+/* (sama style yang kamu pakai, ringkas agar rapi) */
+:root{--bg:#111;--card:#1e1e1e;--text:#fff;--accent:#f5f5f5;--accent2:#c9c9c9;--warn:#f39c12;--danger:#e74c3c;--radius:10px;--shadow:0 4px 15px rgba(0,0,0,0.4)}
+*{box-sizing:border-box}body{font-family:"Poppins",sans-serif;background:var(--bg);color:var(--text);margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.card{background:var(--card);box-shadow:var(--shadow);border-radius:var(--radius);padding:24px;max-width:480px;width:90%;text-align:center}
+label{display:block;text-align:left;margin-top:12px;color:var(--accent2)}input[type=text]{width:100%;padding:10px;border:none;border-radius:var(--radius);background:#2a2a2a;color:#fff;margin-top:4px}
+.buttons{display:flex;gap:10px;justify-content:center;margin-top:16px}
+button{flex:1;min-width:100px;border:none;border-radius:var(--radius);padding:10px 14px;cursor:pointer;color:#000;font-weight:600;transition:0.2s}
+button.save{background:var(--accent)}button.open{background:#555;color:#fff}button.clear{background:var(--danger);color:#fff}button.fix{background:var(--warn)}button.off{background:#2ecc71;color:#000}
+.status{margin-top:16px;background:#2a2a2a;padding:10px;border-radius:var(--radius);text-align:left;font-size:14px}small{color:#aaa}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>⚙️ Admin Web (Realtime)</h1>
+    <p style="color:#ccc;font-size:14px">Atur link & mode perbaikan — perubahan akan langsung terlihat ke semua perangkat.</p>
+
+    <label>Link Halaman Kedua</label>
+    <input id="linkInput" type="text" placeholder="https://contoh.com/isi.html">
+
+    <div class="buttons">
+      <button class="save" id="saveBtn">💾 Simpan (push)</button>
+      <button class="open" id="openBtn">🔗 Buka Halaman</button>
+      <button class="clear" id="clearBtn">🗑️ Hapus</button>
+    </div>
+
+    <hr style="border:0;border-top:1px solid #333;margin:20px 0">
+
+    <div class="buttons">
+      <button class="fix" id="enableBtn">🚧 Aktifkan Perbaikan</button>
+      <button class="off" id="disableBtn">✅ Nonaktifkan</button>
+    </div>
+
+    <div class="status">
+      <div><b>Status:</b></div>
+      <div>Link saat ini: <span id="curLink">-</span></div>
+      <div>Mode perbaikan: <span id="curMaint">-</span></div>
+    </div>
+  </div>
+
+<!-- LOAD FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+<script>
+// -------------- MASUKKAN FIREBASE CONFIG DI SINI ---------------
+const firebaseConfig = /* FIREBASE CONFIG HERE (object) */;
+// -------------------------------------------------------------
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const linkInput = document.getElementById('linkInput');
+const saveBtn = document.getElementById('saveBtn');
+const openBtn = document.getElementById('openBtn');
+const clearBtn = document.getElementById('clearBtn');
+const enableBtn = document.getElementById('enableBtn');
+const disableBtn = document.getElementById('disableBtn');
+const curLink = document.getElementById('curLink');
+const curMaint = document.getElementById('curMaint');
+
+function refreshUI(link, maint){
+  curLink.textContent = link ? link : '-';
+  curMaint.textContent = maint ? 'AKTIF 🚧' : 'NORMAL ✅';
+  linkInput.value = link || '';
+}
+
+// read initial values
+db.ref('appConfig').on('value', snapshot=>{
+  const val = snapshot.val() || {};
+  refreshUI(val.link, val.maintenance);
+});
+
+// actions
+saveBtn.onclick = ()=>{
+  const val = linkInput.value.trim();
+  if(!val) return alert('Masukkan link terlebih dahulu!');
+  db.ref('appConfig').update({ link: val })
+    .then(()=> alert('✅ Link tersimpan di server!'))
+    .catch(err => alert('Error: '+err.message));
+};
+
+openBtn.onclick = ()=>{
+  const val = linkInput.value.trim();
+  if(!val) return alert('Masukkan link dulu!');
+  // buka page.html dengan parameter link (opsional)
+  window.open(`page.html?link=${encodeURIComponent(val)}`, '_blank');
+};
+
+clearBtn.onclick = ()=>{
+  if(!confirm('Yakin mau hapus link?')) return;
+  db.ref('appConfig').update({ link: null })
+    .then(()=> alert('🗑️ Link dihapus dari server.'))
+    .catch(err => alert('Error: '+err.message));
+};
+
+enableBtn.onclick = ()=>{
+  db.ref('appConfig').update({ maintenance: true })
+    .then(()=> alert('🚧 Mode perbaikan diaktifkan.'))
+    .catch(err => alert('Error: '+err.message));
+};
+disableBtn.onclick = ()=>{
+  db.ref('appConfig').update({ maintenance: false })
+    .then(()=> alert('✅ Mode perbaikan dinonaktifkan.'))
+    .catch(err => alert('Error: '+err.message));
+};
+</script>
+</body>
+</html>
